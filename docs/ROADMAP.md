@@ -168,6 +168,9 @@ Este é o coração do projeto. Siga a ordem das tarefas.
 - [ ] Teste: mesma chave enviada 2x em sequência gera uma única transferência.
 - [ ] Teste: mesma chave enviada 2x em paralelo gera uma única transferência.
 - [ ] Rotina de limpeza de chaves antigas (RN-38).
+- [ ] Documentar o header `Idempotency-Key` no Swagger UI, nos endpoints de
+      transferência e depósito, com os erros `IDEMPOTENCY_KEY_MISSING` e
+      `IDEMPOTENCY_KEY_REUSED`.
 
 **Pronto quando**
 - Nenhum cenário de reenvio gera transferência duplicada.
@@ -193,6 +196,8 @@ Este é o coração do projeto. Siga a ordem das tarefas.
 - [ ] `@PreAuthorize` para regras de perfil (RN-06).
 - [ ] Verificação de titularidade da conta (RN-05, RN-21).
 - [ ] Testes: usuário A tentando operar a conta de B recebe 403.
+- [ ] Configurar o esquema de autenticação Bearer (JWT) no OpenAPI, para que
+      o Swagger UI permita informar o token e chamar endpoints protegidos.
 
 **Pronto quando**
 - Nenhum endpoint protegido responde sem token válido.
