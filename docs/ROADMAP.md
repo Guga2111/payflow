@@ -53,9 +53,9 @@ Regras pessoais:
 - Por que `@Data` do Lombok é problemático em entidades JPA?
 
 **Tarefas**
-- [ ] Migrations para `usuario`, `conta`, `transacao`, `lancamento`.
-- [ ] Entidade `Conta` com métodos de domínio: `debitar`, `creditar`, `bloquear`,
-      `encerrar`. As regras (RN-08 a RN-12) ficam dentro da entidade.
+- [ ] Migrations para `users`, `account`, `transaction`, `launch`, `notifications`.
+- [ ] Entidade `Conta` com métodos de domínio: `debit` deve incluir reset preguiçoso do `amount_today` e verificar o `daily_limit`, `credit`, `block`,
+      `finish`. As regras (RN-08 a RN-12) ficam dentro da entidade.
 - [ ] Entidades `Transacao` e `Lancamento` (imutável, RN-41).
 - [ ] Exceções de domínio próprias (ex.: `SaldoInsuficienteException`).
 - [ ] Testes unitários puros (sem Spring) para as regras da `Conta`.
@@ -80,7 +80,7 @@ Regras pessoais:
 
 **Tarefas**
 - [ ] DTOs como `record`, separados por requisição e resposta.
-- [ ] Endpoints: criar conta, consultar conta, depósito (RN-16 a RN-20),
+- [ ] Endpoints: criar conta (vai existir junto com criar usuario), consultar conta, depósito (RN-16 a RN-20),
       alterar status, extrato paginado (RN-42).
 - [ ] Bean Validation nos DTOs de entrada.
 - [ ] `@RestControllerAdvice` retornando `ProblemDetail` com os códigos do
@@ -119,12 +119,13 @@ Este é o coração do projeto. Siga a ordem das tarefas.
 - [ ] Implementar lock pessimista (`SELECT ... FOR UPDATE`).
 - [ ] Travar as contas sempre na mesma ordem (ex.: menor ID primeiro) — RN-33.
 - [ ] Teste de transferências cruzadas A→B e B→A simultâneas.
-- [ ] Garantir que a validação do limite diário também está protegida (RN-31).
+- [ ] Garantir que a validação do limite diário também está protegida, verificando `amount_today`  (RN-31).
 - [ ] Configurar timeout de lock e mapear para `CONFLITO_CONCORRENCIA` (RN-34).
 - [ ] Teste provando rollback: falha forçada após o débito não altera nenhum saldo.
 - [ ] (Opcional) Implementar a versão com lock otimista (`@Version`) e comparar.
 
 **Pronto quando**
+- Depois da transferência o `balance_after` do `launch` tem que ser igual ao valor de `amount` em `account`
 - O teste com 50+ threads passa repetidamente; a soma total dos saldos do
   sistema não muda.
 - O teste de transferências cruzadas passa sem deadlock.
@@ -188,29 +189,77 @@ Este é o coração do projeto. Siga a ordem das tarefas.
 
 ## Marco 6 — Notificações Assíncronas
 
+Decisão de arquitetura: o consumidor de notificações roda dentro da própria
+aplicação PayFlow, em um pacote separado (`notification`), e a tabela
+`notifications` fica no mesmo banco. A extração para um serviço independente
+fica como evolução futura (ver ADR).
+
 **Antes de começar**
 - O que é o problema do *dual write*?
 - Por que publicar um evento dentro do `@Transactional` é perigoso?
 - O que é o padrão Transactional Outbox?
+- O que significa entrega "at-least-once"? Por que o RabbitMQ pode entregar a
+  mesma mensagem mais de uma vez?
 - O que é uma DLQ e quando uma mensagem vai para ela?
+- Qual a diferença entre ack automático e manual no consumidor? Em qual deles
+  uma falha no meio do processamento faz a mensagem se perder?
 
 **Tarefas**
-- [ ] Versão 1: `@TransactionalEventListener(phase = AFTER_COMMIT)` + `@Async`.
-      Entender o que se perde se a aplicação cair logo após o commit.
+
+*Parte 1 — Evento em memória*
+- [ ] Migration da tabela `notifications`.
+- [ ] Publicar um evento de domínio ao concluir uma transferência.
+- [ ] Listener com `@TransactionalEventListener(phase = AFTER_COMMIT)` + `@Async`
+      que grava a notificação do destinatário.
+- [ ] Anotar em `docs/estudos/marco-6.md`: o que se perde se a aplicação cair
+      entre o commit e a gravação da notificação?
+
+*Parte 2 — Outbox + RabbitMQ*
 - [ ] Subir RabbitMQ no `docker-compose.yml`.
-- [ ] Versão 2: tabela `outbox` gravada na mesma transação da transferência
-      + job que publica no broker.
-- [ ] Consumidor que simula a notificação via log (RN-43).
+- [ ] Migration da tabela `outbox`.
+- [ ] Gravar o evento no `outbox` na mesma transação da transferência.
+- [ ] Job que lê eventos pendentes do `outbox`, publica no broker e marca como
+      publicados.
+- [ ] Consumidor que recebe o evento e grava a notificação (RN-43).
+- [ ] Consumidor idempotente: constraint única na tabela `notifications` que
+      impeça duas notificações para o mesmo evento (decidir qual coluna).
 - [ ] Retry com backoff e DLQ (RN-46).
-- [ ] Teste: transferência com rollback não gera mensagem (RN-44).
-- [ ] Teste: consumidor falhando não afeta a transferência (RN-45).
+- [ ] Remover a Parte 1, deixando só o fluxo via outbox.
+
+*Parte 3 — API de notificações*
+- [ ] Endpoint para listar as notificações do usuário autenticado (paginado,
+      mais recentes primeiro).
+- [ ] Endpoint para marcar uma notificação como lida.
+- [ ] Verificação de titularidade: um usuário só vê e altera as próprias
+      notificações.
+
+*Testes*
+- [ ] Transferência com rollback não gera evento no outbox nem notificação (RN-44).
+- [ ] Consumidor falhando não afeta a transferência (RN-45).
+- [ ] A mesma mensagem entregue duas vezes gera uma única notificação.
+- [ ] Mensagem que falha repetidamente vai para a DLQ sem bloquear as demais (RN-46).
+- [ ] Usuário A não consegue ler nem marcar como lida a notificação de B.
 
 **Pronto quando**
 - Nenhuma transferência confirmada fica sem notificação, e nenhuma notificação
   existe para transferência não confirmada.
+- Reprocessar mensagens nunca gera notificações duplicadas.
+- Derrubar o RabbitMQ não impede transferências; quando ele volta, as
+  notificações pendentes são entregues.
 
 **Armadilhas**
-- Consumidor não idempotente (a mesma mensagem pode chegar mais de uma vez).
+- Publicar no broker de dentro do `@Transactional` da transferência.
+- Consumidor não idempotente (o job do outbox pode publicar o mesmo evento
+  duas vezes se cair entre publicar e marcar como publicado).
+- Ack automático: a mensagem é confirmada antes de a notificação ser gravada.
+- Pegar o `user_id` do corpo da requisição nos endpoints de notificação, em vez
+  do token.
+- Retry infinito sem DLQ: uma mensagem com problema trava a fila.
+
+**Decisões em aberto**
+- Depósitos também geram notificação para o destinatário?
+- A notificação é gravada com o texto pronto (`title`, `body_message`) ou com
+  dados estruturados, montando o texto na hora de exibir?
 
 ---
 
