@@ -77,4 +77,4 @@ Se um documento estiver desatualizado em relação ao código, avise.
 
 ## Contexto técnico
 
-- Java 21, Spring Boot 3.x,
+- Java 25, Spring Boot 4.x,

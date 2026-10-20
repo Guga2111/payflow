@@ -1,0 +1,15 @@
+services:
+  api:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/payflow-api:latest
+    container_name: payflow-api
+    restart: always
+    ports:
+      - "127.0.0.1:8095:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: ${DB_URL}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_EXPIRATION_MS: ${JWT_ACCESS_EXPIRATION_MS}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
