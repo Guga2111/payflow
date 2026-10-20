@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: payflow-db-dev
+    environment:
+      POSTGRES_DB: payflow
+      POSTGRES_USER: payflow
+      POSTGRES_PASSWORD: payflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  api:
+    build: .
+    container_name: payflow-api-dev
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_URL: jdbc:postgresql://db:5432/payflow
+      DB_USERNAME: payflow
+      DB_PASSWORD: payflow
+      JWT_SECRET: dev-secret-replace-in-prod-minimum-32-chars
+      JWT_ACCESS_EXPIRATION_MS: 900000
+      ALLOWED_ORIGINS: http://localhost:5083
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
