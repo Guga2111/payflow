@@ -70,32 +70,50 @@ Regras pessoais:
 
 ---
 
-## Marco 2 — API REST, Validação e Erros
+## Marco 2 — API REST, Validação, Erros e Documentação
 
 **Antes de começar**
 - Qual a diferença entre validar formato (Bean Validation) e validar regra de
   negócio (domínio)? Onde cada uma deve ficar?
 - Por que não expor entidades JPA diretamente na API?
 - O que é o problema N+1? Como identificá-lo no log de SQL?
+- Qual a diferença entre a especificação OpenAPI e o Swagger UI?
+- Por que documentação gerada a partir do código tende a ficar menos
+  desatualizada do que documentação escrita à parte?
 
 **Tarefas**
 - [ ] DTOs como `record`, separados por requisição e resposta.
-- [ ] Endpoints: criar conta (vai existir junto com criar usuario), consultar conta, depósito (RN-16 a RN-20),
-      alterar status, extrato paginado (RN-42).
+- [ ] Endpoints: criar conta (vai existir junto com criar usuário), consultar
+      conta, depósito (RN-16 a RN-20), alterar status, extrato paginado (RN-42).
 - [ ] Bean Validation nos DTOs de entrada.
 - [ ] `@RestControllerAdvice` retornando `ProblemDetail` com os códigos do
       catálogo de erros.
 - [ ] Testes de controller com `@WebMvcTest`.
 - [ ] Verificar no log se o extrato gera N+1. Só corrigir se gerar.
+- [ ] Adicionar o springdoc-openapi (conferir a versão compatível com a
+      versão do Spring Boot do projeto).
+- [ ] Descrever cada endpoint: o que faz, quais regras (RN-XX) aplica e
+      exemplos de requisição e resposta.
+- [ ] Documentar as respostas de erro de cada endpoint no formato
+      `ProblemDetail`, com os códigos do catálogo que ele pode devolver.
+- [ ] Decidir se o Swagger UI fica disponível em todos os ambientes ou só no
+      perfil de desenvolvimento, e registrar a decisão.
 
 **Pronto quando**
 - Todo erro da API sai no formato ProblemDetail com o código correto.
 - Nenhum endpoint retorna uma entidade JPA.
+- Todos os endpoints aparecem no Swagger UI com descrição, exemplos e erros
+  possíveis.
+- Dá para executar o fluxo de depósito e consulta de extrato inteiro pelo
+  Swagger UI.
 
 **Armadilhas**
 - Colocar regra de negócio em anotação de validação.
 - `JOIN FETCH` com paginação (o Hibernate pagina em memória).
-
+- Um schema no Swagger com o nome ou os campos de uma entidade JPA: é sinal de
+  que a entidade está vazando pela API.
+- Encher os controllers de anotações de documentação a ponto de esconder o
+  código. Descrições longas podem ficar na configuração do OpenAPI.
 ---
 
 ## Marco 3 — Transferência e Concorrência ⭐
