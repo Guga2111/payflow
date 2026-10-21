@@ -29,11 +29,11 @@ Regras pessoais:
 - Por que testar contra PostgreSQL real em vez de H2?
 
 **Tarefas**
-- [ ] Projeto Spring Boot 3.x com Java 21 (Web, Data JPA, Validation, PostgreSQL, Flyway).
-- [ ] `docker-compose.yml` com PostgreSQL.
-- [ ] Flyway configurado; `ddl-auto=validate`.
+- [x] Projeto Spring Boot 4.x com Java 25 (Web, Data JPA, Validation, PostgreSQL, Flyway).
+- [x] `docker-compose.yml` com PostgreSQL.
+- [x] Flyway configurado; `ddl-auto=validate`.
 - [ ] Testcontainers configurado com um teste que apenas sobe o contexto.
-- [ ] Log de SQL habilitado no perfil de desenvolvimento.
+- [x] Log de SQL habilitado no perfil de desenvolvimento.
 
 **Pronto quando**
 - `docker compose up` + aplicação sobem sem erro.
