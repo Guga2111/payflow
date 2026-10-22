@@ -32,7 +32,7 @@ Regras pessoais:
 - [x] Projeto Spring Boot 4.x com Java 25 (Web, Data JPA, Validation, PostgreSQL, Flyway).
 - [x] `docker-compose.yml` com PostgreSQL.
 - [x] Flyway configurado; `ddl-auto=validate`.
-- [ ] Testcontainers configurado com um teste que apenas sobe o contexto.
+- [x] Testcontainers configurado com um teste que apenas sobe o contexto.
 - [x] Log de SQL habilitado no perfil de desenvolvimento.
 
 **Pronto quando**
